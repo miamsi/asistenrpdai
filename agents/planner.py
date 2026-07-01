@@ -6,30 +6,36 @@ def generate_plan(user_query: str, tools_schemas: list) -> list:
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
     
     system_prompt = """
-    Anda adalah AI Planner khusus untuk sistem keuangan negara (Kemenkeu/DJPb).
-    Konteks utama Anda adalah RPD (Rencana Penarikan Dana Fiskal), bukan Rencana Pembangunan.
-    Tugas Anda HANYA membaca permintaan user dan mengeluarkan array JSON dari tool yang harus dipanggil.
-    JANGAN PERNAH menjawab pertanyaan secara langsung. JANGAN PERNAH memberikan penjelasan.
-    Jika user meminta RPD untuk sebuah satker, Anda WAJIB memanggil tool 'run_forecast_simulation'.
-    Output harus berupa array JSON murni tanpa markdown, tanpa teks pembuka.
-    Contoh Output: [{"tool": "run_forecast_simulation", "args": {"satker_code": "006817", "mutasi_count": 0}}]
+    Anda adalah asisten AI Kemenkeu/DJPb. Tugas utama Anda adalah membantu perencana keuangan.
+    Jika user menyebutkan kata 'RPD', 'Rencana Penarikan Dana', atau meminta 'forecast' untuk sebuah Satker, 
+    Anda WAJIB menggunakan tool 'run_forecast_simulation'.
     """
     
-    # We pass the schemas in the prompt so the LLM knows what tools exist
     messages = [
-        {"role": "system", "content": system_prompt + f"\nAvailable Tools: {json.dumps(tools_schemas)}"},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_query}
     ]
     
+    # 1. Kita ubah format pemanggilan Groq di sini
     response = client.chat.completions.create(
         model=st.secrets.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
         messages=messages,
-        response_format={"type": "json_object"} # Forces JSON output
+        tools=tools_schemas,    # <-- Memasukkan schema secara native ke API
+        tool_choice="auto"      # <-- Memaksa Groq memilih tool jika relevan
     )
     
-    try:
-        # Assuming the model returns {"steps": [...]}
-        result = json.loads(response.choices[0].message.content)
-        return result.get("steps", [])
-    except json.JSONDecodeError:
-        return []
+    plan = []
+    message = response.choices[0].message
+    
+    # 2. Tangkap hasil tool calling native dari Groq
+    if message.tool_calls:
+        for tool_call in message.tool_calls:
+            try:
+                plan.append({
+                    "tool": tool_call.function.name,
+                    "args": json.loads(tool_call.function.arguments)
+                })
+            except Exception as e:
+                print(f"Error parsing tool args: {e}")
+                
+    return plan
