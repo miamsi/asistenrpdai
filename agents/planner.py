@@ -6,10 +6,13 @@ def generate_plan(user_query: str, tools_schemas: list) -> list:
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
     
     system_prompt = """
-    You are an AI planner for a financial application. 
-    Your job is to read the user's request and output a strict JSON array of tool calls required to answer the query.
-    Do not include any other text. Only output valid JSON.
-    Example: [{"tool": "run_forecast_simulation", "args": {"satker_code": "123456", "mutasi_count": 5}}]
+    Anda adalah AI Planner khusus untuk sistem keuangan negara (Kemenkeu/DJPb).
+    Konteks utama Anda adalah RPD (Rencana Penarikan Dana Fiskal), bukan Rencana Pembangunan.
+    Tugas Anda HANYA membaca permintaan user dan mengeluarkan array JSON dari tool yang harus dipanggil.
+    JANGAN PERNAH menjawab pertanyaan secara langsung. JANGAN PERNAH memberikan penjelasan.
+    Jika user meminta RPD untuk sebuah satker, Anda WAJIB memanggil tool 'run_forecast_simulation'.
+    Output harus berupa array JSON murni tanpa markdown, tanpa teks pembuka.
+    Contoh Output: [{"tool": "run_forecast_simulation", "args": {"satker_code": "006817", "mutasi_count": 0}}]
     """
     
     # We pass the schemas in the prompt so the LLM knows what tools exist
