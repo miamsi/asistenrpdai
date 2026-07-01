@@ -1,13 +1,13 @@
 from groq import Groq
 import streamlit as st
-import json
 from agents.planner import generate_plan
 from agents.executor import execute_plan
-from tools.registry import AVAILABLE_TOOLS_SCHEMAS
 
-def process_agentic_workflow(user_query: str, df, state: dict):
+def process_agentic_workflow(user_query: str, df, state: dict, chat_history: list):
     yield {"trace": "🧠 Menganalisis kebutuhan & memperbarui parameter sandbox..."}
-    plan, updated_state = generate_plan(user_query, state)
+    
+    # Teruskan chat_history ke Planner
+    plan, updated_state = generate_plan(user_query, state, chat_history)
     yield {"new_state": updated_state}
     
     if not plan:
@@ -21,6 +21,9 @@ def process_agentic_workflow(user_query: str, df, state: dict):
     
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
     
+    # Ambil 4 obrolan terakhir untuk memori sintesis
+    rolling_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history[-4:]])
+    
     synthesis_prompt = f"""
     Anda adalah asisten AI Kemenkeu/DJPb Otoritatif. 
     Tugas Anda adalah memformat jawaban hasil analisis keuangan dari context yang diberikan.
@@ -30,7 +33,12 @@ def process_agentic_workflow(user_query: str, df, state: dict):
     2. Tampilkan pula ringkasan Pagu DIPA, Pagu Efektif, Sisa Anggaran, serta Analisis Capaian Target Triwulanan yang ada pada context.
     3. Jawablah menggunakan Bahasa Indonesia yang formal dan lugas.
     
-    Context Data: {final_context}
+    Riwayat Percakapan Sebelumnya:
+    {rolling_history}
+    
+    Context Data Eksekusi (OTORITATIF): 
+    {final_context}
+    
     Query User: {user_query}
     """
     
