@@ -1,10 +1,9 @@
 from core.forecasting_engine import calculate_rpd_forecast
 import json
 
-def execute_forecast_service(df, args_json: str) -> str:
-    """Parses LLM arguments, calls the core engine, and returns a JSON string result."""
+def execute_forecast_service(df, args: dict) -> str:
+    """Menerima representasi data dictionary langsung dari Executor Layer."""
     try:
-        args = json.loads(args_json)
         satker = args.get("satker_code")
         mutasi = args.get("mutasi_count", 0)
         n_curr = args.get("n_curr", 50)
