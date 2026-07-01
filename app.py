@@ -11,67 +11,50 @@ def get_global_dataframe():
     path = "master_data.parquet"
     if os.path.exists(path):
         df = pd.read_parquet(path)
-        # Sesuai regulasi data pemerintah: pastikan padding teks aman
-        cols = ['KDSATKER', 'KDAKUN', 'KDDEPT']
+        cols = ['KDSATKER', 'KDAKUN']
         for col in cols:
-            if col in df.columns: 
-                df[col] = df[col].astype(str).str.strip()
-        if 'KDSATKER' in df.columns: 
-            df['KDSATKER'] = df['KDSATKER'].str.zfill(6)
-        if 'KDDEPT' in df.columns: 
-            df['KDDEPT'] = df['KDDEPT'].str.zfill(3)
-        if 'MONTH' not in df.columns: 
-            df['MONTH'] = 'JAN'
-            
-        for col in ['PAGU_DIPA', 'REAL', 'BLOKIR']:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            if col in df.columns: df[col] = df[col].astype(str).str.strip()
+        if 'KDSATKER' in df.columns: df['KDSATKER'] = df['KDSATKER'].str.zfill(6)
+        if 'MONTH' not in df.columns: df['MONTH'] = 'JAN'
         return df
-        
-    # Validasi Tinjauan Arsitektur: Pastikan kolom MONTH tersedia agar fallback tidak crash
-    return pd.DataFrame({
-        'KDSATKER': ['006817'],
-        'KDDEPT': ['004'],
-        'KDAKUN': ['511111'],
-        'YEAR': [2026],
-        'PAGU_DIPA': [70250129000],
-        'BLOKIR': [0],
-        'MONTH': ['JAN'],
-        'REAL': [0]
-    })
+    return pd.DataFrame(columns=['KDSATKER', 'YEAR', 'PAGU_DIPA', 'BLOKIR', 'MONTH', 'REAL'])
 
 df = get_global_dataframe()
 
-# Inisialisasi State Eksplisit untuk Manajemen Memori yang Kuat
+# Inisialisasi State Lengkap Version 1
 if "agent_state" not in st.session_state:
-    st.session_state.agent_state = {"satker": None, "mutasi": 0, "override_blokir_52": 0.0}
+    st.session_state.agent_state = {
+        "satker": None, 
+        "mutasi": 0, 
+        "override_blokir_52": 0.0, 
+        "n_curr": 50,
+        "plan_53_months": None
+    }
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Tampilkan riwayat chat di UI
+# Render Riwayat Obrolan
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-if prompt := st.chat_input("Contoh: Buatkan RPD Satker 006817"):
+if prompt := st.chat_input("Contoh: Atur belanja 53 Satker 006817 di bulan Maret dan Juni"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"): 
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.status("Memproses analisis fiskal...", expanded=True) as status:
+        with st.status("Memproses RPD...", expanded=True) as status:
             final_answer = ""
-            # Memisahkan pengiriman prompt aktif dengan histori masa lalu
-            past_history = st.session_state.messages[:-1]
-            
-            for update in process_agentic_workflow(prompt, df, st.session_state.agent_state, past_history):
+            for update in process_agentic_workflow(prompt, df, st.session_state.agent_state):
                 if "trace" in update: 
                     st.write(update["trace"])
+                if "new_state" in update:
+                    st.session_state.agent_state = update["new_state"]
                 if "final_answer" in update: 
                     final_answer = update["final_answer"]
-                if "new_state" in update: 
-                    st.session_state.agent_state.update(update["new_state"])
-            status.update(label="Selesai", state="complete", expanded=False)
+            
+            status.update(label="Selesai!", state="complete", expanded=False)
             
         st.markdown(final_answer)
         st.session_state.messages.append({"role": "assistant", "content": final_answer})
