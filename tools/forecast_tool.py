@@ -3,7 +3,7 @@ def get_forecast_schema():
         "type": "function",
         "function": {
             "name": "run_forecast_simulation",
-            "description": "Menghitung simulasi proyeksi RPD bulanan untuk Satker tertentu berdasarkan DNA Fiskal historis dan parameter penyesuaian.",
+            "description": "WAJIB DIGUNAKAN apabila user meminta pembuatan 'RPD', 'Rencana Penarikan Dana', 'forecast', 'sandbox', atau 'anggaran' untuk sebuah Satker. Alat ini menghitung proyeksi keuangan bulanan serta mendukung penyesuaian termin belanja 53.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -11,19 +11,25 @@ def get_forecast_schema():
                         "type": "string", 
                         "minLength": 6, 
                         "maxLength": 6,
-                        "description": "Kode unik identitas Satker 6 digit angka penuh."
+                        "description": "Kode Satker 6 digit angka angka (contoh: '006817')."
                     },
                     "mutasi_count": {
                         "type": "integer",
-                        "minimum": -500,
-                        "maximum": 500,
-                        "description": "Jumlah penambahan atau pengurangan net pegawai di Satker tersebut."
+                        "description": "Jumlah perubahan pegawai / mutasi pegawai."
+                    },
+                    "n_curr": {
+                        "type": "integer",
+                        "description": "Konfigurasi nilai n_curr."
                     },
                     "override_blokir_52_pct": {
                         "type": "number", 
-                        "minimum": 0.0, 
-                        "maximum": 100.0,
-                        "description": "Nilai persentase pemblokiran anggaran manual yang dipaksakan khusus jenis belanja 52 (0-100)."
+                        "minimum": 0, 
+                        "maximum": 100,
+                        "description": "Persentase override blokir untuk jenis belanja 52."
+                    },
+                    "plan_53_months": {
+                        "type": "object",
+                        "description": "Sandbox mapping alokasi bulan untuk Belanja 53. Contoh: {'MAR': 1, 'JUN': 1} artinya dibagi rata di bulan Maret dan Juni."
                     }
                 },
                 "required": ["satker_code"]
