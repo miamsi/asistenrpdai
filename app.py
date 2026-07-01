@@ -46,7 +46,12 @@ if prompt := st.chat_input("Contoh: Atur belanja 53 Satker 006817 di bulan Maret
     with st.chat_message("assistant"):
         with st.status("Memproses RPD...", expanded=True) as status:
             final_answer = ""
-            for update in process_agentic_workflow(prompt, df, st.session_state.agent_state):
+            
+            # Ekstrak riwayat percakapan sebelumnya (tanpa prompt yang baru saja dimasukkan)
+            past_history = st.session_state.messages[:-1]
+            
+            # Kirimkan past_history sebagai argumen ke-4
+            for update in process_agentic_workflow(prompt, df, st.session_state.agent_state, past_history):
                 if "trace" in update: 
                     st.write(update["trace"])
                 if "new_state" in update:
