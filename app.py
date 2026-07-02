@@ -93,22 +93,27 @@ if prompt := st.chat_input("Contoh: Atur belanja 53 Satker 635329 di bulan Maret
             df_plan = pd.DataFrame.from_dict(plan_det, orient='index')
             st.dataframe(df_plan.style.format("Rp {:,.0f}"), use_container_width=True)
             
+            # ... (Lanjutan kode dari dalam blok rendering UI if ui_payload:)
+            
             # 3. Analisis Capaian Target dengan HTML Box Berwarna
-            st.write("### 🔍 Analisis Capaian Target Triwulan 1")
+            curr_q = ui_payload.get('current_quarter', 1)
+            st.write(f"### 🔍 Analisis Capaian Target Triwulan {curr_q}")
             res_cols = st.columns(3)
             targets = ui_payload.get('target_status', {})
+            
             for i, p in enumerate(accs):
-                with res_cols[i]:
-                    st.markdown(f"**Progress {p}**")
-                    t_info = targets.get(p, {})
-                    actual = t_info.get('actual_pct', 0)
-                    target = t_info.get('target_pct', 0)
-                    status_txt = t_info.get('status', 'N/A')
-                    st.write(f"Realisasi/Plan T1: {actual:.1%} (Target: {target:.1%})")
-                    
-                    if "GAGAL" in status_txt:
-                        st.error(f"❌ **{status_txt}**")
-                        st.markdown(f'<div style="background-color:#ff4b4b; padding:10px; border-radius:5px; color:white;">Membutuhkan akselerasi penyerapan!</div>', unsafe_allow_html=True)
-                    else:
-                        st.success(f"✅ **{status_txt}**")
-                        st.markdown(f'<div style="background-color:#21c354; padding:10px; border-radius:5px; color:white;">Sesuai Trajektori</div>', unsafe_allow_html=True)
+                if p in targets:
+                    with res_cols[i]:
+                        st.markdown(f"**Progress {p}**")
+                        t_info = targets.get(p, {})
+                        actual = t_info.get('actual_pct', 0)
+                        target = t_info.get('target_pct', 0)
+                        status_txt = t_info.get('status', 'N/A')
+                        st.write(f"Realisasi/Plan T{curr_q}: {actual:.1%} (Target: {target:.1%})")
+                        
+                        if "GAGAL" in status_txt:
+                            st.error(f"❌ **{status_txt}**")
+                            st.markdown(f'<div style="background-color:#ff4b4b; padding:10px; border-radius:5px; color:white;">Membutuhkan akselerasi penyerapan!</div>', unsafe_allow_html=True)
+                        else:
+                            st.success(f"✅ **{status_txt}**")
+                            st.markdown(f'<div style="background-color:#21c354; padding:10px; border-radius:5px; color:white;">Sesuai Trajektori</div>', unsafe_allow_html=True)
