@@ -73,7 +73,7 @@ Gunakan Bahasa Indonesia formal yang profesional dan solutif."""
                 payload.append({"role": msg["role"], "content": str(msg["content"])})
                 
         response = client.chat.completions.create(
-            model="llama3-70b-8192",
+            model="openai/gpt-oss-120b",
             messages=payload,
             response_format={"type": "json_object"},
             temperature=0.4
