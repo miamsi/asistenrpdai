@@ -76,7 +76,7 @@ Gunakan Bahasa Indonesia formal yang profesional dan solutif."""
             model="llama-3.3-70b-versatile",
             messages=payload,
             response_format={"type": "json_object"},
-            temperature=0.2
+            temperature=0.6
         )
         return json.loads(response.choices[0].message.content)
     except Exception as e:
