@@ -37,11 +37,15 @@ def get_ai_consultant_json(messages_history, recom_df, pagu_map, current_q):
     try:
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         
+        # PERBAIKAN: Mengonversi data NumPy/Pandas ke native Python agar aman untuk JSON
+        safe_pagu_map = {k: float(v) for k, v in pagu_map.items()}
+        safe_recom_df = json.loads(recom_df.to_json())
+        
         # Ekstraksi matriks data operasional untuk dikirim ke LLM
         context_data = {
-            "pagu_efektif_satker": pagu_map,
-            "proposal_default_sistem": recom_df.to_dict(),
-            "triwulan_berjalan_saat_ini": current_q
+            "pagu_efektif_satker": safe_pagu_map,
+            "proposal_default_sistem": safe_recom_df,
+            "triwulan_berjalan_saat_ini": int(current_q)
         }
         
         system_prompt = f"""Anda adalah Konsultan Perencana Anggaran Pemerintah yang sangat ahli, presisi, dan bijaksana.
@@ -69,7 +73,7 @@ Gunakan Bahasa Indonesia formal yang profesional dan solutif."""
                 payload.append({"role": msg["role"], "content": str(msg["content"])})
                 
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model="llama3-70b-8192",
             messages=payload,
             response_format={"type": "json_object"},
             temperature=0.4
@@ -78,8 +82,8 @@ Gunakan Bahasa Indonesia formal yang profesional dan solutif."""
     except Exception as e:
         return {
             "analisis": f"Koneksi ke AI Consultant terganggu. Detail: {str(e)}",
-            "risiko": ["Konfigurasi API Key di secrets.toml mungkin belum tepat atau kuota limit tercapai."],
-            "saran": "Silakan periksa kembali berkas secrets.toml Anda."
+            "risiko": ["Konfigurasi API Key di secrets.toml mungkin belum tepat atau format data tidak sesuai."],
+            "saran": "Silakan hubungi administrator atau periksa kembali logs aplikasi."
         }
 
 # --- 2. LOGIKA DNA FISKAL (Account-Specific Spike Detection) ---
