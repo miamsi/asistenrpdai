@@ -73,10 +73,10 @@ Gunakan Bahasa Indonesia formal yang profesional dan solutif."""
                 payload.append({"role": msg["role"], "content": str(msg["content"])})
                 
         response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
+            model="llama-3.3-70b-versatile",
             messages=payload,
             response_format={"type": "json_object"},
-            temperature=0.4
+            temperature=0.2
         )
         return json.loads(response.choices[0].message.content)
     except Exception as e:
